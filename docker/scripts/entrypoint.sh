@@ -2,15 +2,14 @@
 
 set -eo pipefail
 
-sudo service postgresql start
+PORT="${PORT:? The PORT environment variable must be set}"
 
-pg_isready --quiet --timeout=30 || {
- echo "PostgreSQL is not ready" >&2
- exit 1
-}
-
-PORT=${PORT:? The PORT environment variable must be set}
+SSL_CERT="${SSL_CERT:? SSL_CERT not set}"
+SSL_KEY="${SSL_KEY:? SSL_KEY not set}"
 
 source /app/bin/activate
 
-exec uvicorn npg_porch.server:app --host 0.0.0.0 --port ${PORT} --reload --log-config /app/docker/logging.json
+exec uvicorn npg_porch.server:app \
+  --host 0.0.0.0 --port "$PORT" \
+  --log-config /app/docker/logging.json \
+  --ssl-certfile "$SSL_CERT" --ssl-keyfile "$SSL_KEY"

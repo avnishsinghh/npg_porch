@@ -16,7 +16,8 @@ dependencies = [
     "jinja2",
     "pydantic > 2.0.0",
     "psycopg2-binary",
-    "sqlalchemy >2",
+    "sqlalchemy[asyncio] >2",
+    "greenlet>=3.2.0",
     "ujson",
     "uvicorn",
     "uuid"

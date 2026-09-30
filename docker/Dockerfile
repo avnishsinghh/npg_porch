@@ -1,4 +1,3 @@
-
 ARG BASE_IMAGE=python:3.14-slim
 FROM $BASE_IMAGE AS builder
 
