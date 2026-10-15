@@ -3,7 +3,6 @@ TAG        ?= $(shell git describe --always --tags --dirty)
 BASE_IMAGE ?= python:3.14-slim
 LATEST_TAG ?= latest
 
-PG_VERSION ?= 18
 APP_UID    ?= 1000
 APP_GID    ?= $(APP_UID)
 PORT       ?= 8081
@@ -37,12 +36,9 @@ npg_porch.$(TAG): Dockerfile
 	docker buildx build $(DOCKER_ARGS) \
 	--load \
 	--build-arg BASE_IMAGE=$(BASE_IMAGE) \
-	--build-arg PG_VERSION=$(PG_VERSION) \
 	--build-arg APP_UID=$(APP_UID) \
 	--build-arg APP_GID=$(APP_GID) \
 	--build-arg PORT=$(PORT) \
-	--build-arg DOCKER_IMAGE=$(subst .$(TAG),,$@) \
-	--build-arg DOCKER_TAG=$(TAG) \
 	--label org.opencontainers.image.title=$(IMAGE_NAME) \
 	--label org.opencontainers.image.source=$(git_url) \
 	--label org.opencontainers.image.revision=$(git_commit) \
