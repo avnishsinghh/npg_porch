@@ -15,4 +15,17 @@ case "$APP_ENV" in
   *)    echo "APP_ENV must be 'dev' or 'prod', got '$APP_ENV'" >&2; exit 1 ;;
 esac
 
+ENABLE_TLS=$(tr '[:upper:]' '[:lower:]' <<< "${ENABLE_TLS:-}")
+
+case "$ENABLE_TLS" in
+  y|yes|true|1)
+    SSL_KEYFILE=${SSL_KEYFILE:-/certs/tls.key}
+    SSL_CERTFILE=${SSL_CERTFILE:-/certs/tls.crt}
+    for f in "$SSL_KEYFILE" "$SSL_CERTFILE"; do
+      [[ -r "$f" ]] || { echo "ENABLE_TLS is set but '$f' is not readable" >&2; exit 1; }
+    done
+    uvicorn_args+=(--ssl-keyfile "$SSL_KEYFILE" --ssl-certfile "$SSL_CERTFILE")
+    ;;
+esac
+
 exec uvicorn npg_porch.server:app "${uvicorn_args[@]}" "$@"

@@ -1,9 +1,8 @@
 # Deployment Dockerfile
 
 The Dockerfile, Makefile and scripts in this directory build the npg_porch server
-image that the npg_porch deployment repository on GitLab deploys to Kubernetes. That
-repository uses this same image for both the dev and prod environments and chooses
-between them with the `APP_ENV` environment variable (see
+image for deployment to Kubernetes. The same image is used for both the dev and prod
+environments; the `APP_ENV` environment variable selects between them (see
 [Dev and prod environments](#dev-and-prod-environments)).
 
 The image runs the server with `uvicorn` as a non-root user (`apprunner`, UID 1000 by
@@ -72,12 +71,15 @@ push stamp files, so that the targets can be re-run.
 
 The server is configured with the following environment variables:
 
-| Variable    | Required | Description                                                         |
-|-------------|----------|---------------------------------------------------------------------|
-| `DB_URL`    | Yes      | SQLAlchemy database URL, e.g. `postgresql+asyncpg://user:pass@host:5432/db` |
-| `DB_SCHEMA` | No       | Database schema name                                                |
-| `PORT`      | No       | Port to listen on (default `8081`)                                  |
-| `APP_ENV`   | No       | `prod` (default) or `dev`                                           |
+| Variable       | Required | Description                                                                 |
+|----------------|----------|-----------------------------------------------------------------------------|
+| `DB_URL`       | Yes      | SQLAlchemy database URL, e.g. `postgresql+asyncpg://user:pass@host:5432/db` |
+| `DB_SCHEMA`    | No       | Database schema name                                                        |
+| `PORT`         | No       | Port to listen on (default `8081`)                                          |
+| `APP_ENV`      | No       | `prod` (default) or `dev`                                                   |
+| `ENABLE_TLS`   | No       | `true`, `yes`, `y` or `1` (any case) to serve HTTPS (see [TLS](#tls))       |
+| `SSL_KEYFILE`  | No       | TLS private key path when TLS is enabled (default `/certs/tls.key`)         |
+| `SSL_CERTFILE` | No       | TLS certificate path when TLS is enabled (default `/certs/tls.crt`)         |
 
 For example:
 
@@ -93,10 +95,27 @@ The database schema must already exist; it can be deployed with
 
 ### TLS
 
-Any arguments given to the entrypoint script are passed on to `uvicorn`, so TLS is
-enabled by mounting a certificate and key and passing the `--ssl-*` options. Because
-arguments to `docker run` replace the image's default command, the script path must be
-given explicitly:
+To enable TLS, mount a certificate and key and set `ENABLE_TLS=true` (`yes`, `y` and
+`1` also work, in any case; anything else serves HTTP). The entrypoint script then
+passes `--ssl-keyfile` and `--ssl-certfile` to `uvicorn`, using
+`/certs/tls.key` and `/certs/tls.crt` unless `SSL_KEYFILE` and `SSL_CERTFILE` say
+otherwise. The container exits with an error if either file cannot be read.
+
+```bash
+docker run --rm -p 8081:8081 \
+  -e DB_URL='postgresql+asyncpg://porch_user:password@db.example.com:5432/porch_db' \
+  -e ENABLE_TLS=true \
+  -v /path/to/certs:/certs:ro \
+  npg_porch
+```
+
+In Kubernetes, mount the TLS secret (whose keys are `tls.key` and `tls.crt`) as a
+volume at `/certs` and set `ENABLE_TLS` to `"true"` in the container's `env`.
+
+Alternatively, any arguments given to the entrypoint script are passed on to
+`uvicorn`, so the `--ssl-*` options can be given directly. Because arguments to
+`docker run` replace the image's default command, the script path must then be given
+explicitly:
 
 ```bash
 docker run --rm -p 8081:8081 \
@@ -108,14 +127,15 @@ docker run --rm -p 8081:8081 \
     --ssl-certfile /certs/tls.crt
 ```
 
-In Kubernetes, mount the TLS secret as a volume and set the container's `args` in the
-same way. The container health check requests `/api/v1/openapi.json` over HTTPS first
-and falls back to HTTP, so it works with or without TLS.
+Do not combine this with `ENABLE_TLS`, or the options are passed twice.
+
+The container health check requests `/api/v1/openapi.json` over HTTPS first and falls
+back to HTTP, so it works with or without TLS.
 
 ### Dev and prod environments
 
-The same image runs in both environments. The GitLab deployment sets `APP_ENV` to
-choose how the server starts:
+The same image runs in both environments. The deployment sets `APP_ENV` to choose
+how the server starts:
 
 | `APP_ENV`        | Code is loaded from                    | Auto-reload | Use                       |
 |------------------|----------------------------------------|-------------|---------------------------|
@@ -130,7 +150,7 @@ automatically, so changes can be tried and tested without building a new image.
 **Prod:** the server runs the package that was installed when the image was built. It
 ignores `/app/src` and does not reload, so changes made inside a running prod container
 have no effect. Changes reach prod only through a new image built from this repository
-and released through the GitLab deployment.
+and released through the deployment.
 
 Changes made in a dev pod are lost when the pod restarts. Commit them to this
 repository so that they are included in the next image.
