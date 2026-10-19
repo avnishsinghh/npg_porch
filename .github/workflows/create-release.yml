@@ -50,7 +50,7 @@ jobs:
 
     # Workaround for https://github.com/actions/runner/issues/1483
     # Actions coerces boolean to string
-    if: needs.release.outputs.isRelease == 'true'
+    if: needs.release.outputs.isRelease == 'false'
 
     steps:
       - name: "Free disk space on the runner"
