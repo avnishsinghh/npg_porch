@@ -1,4 +1,4 @@
-# Build context is the repository root (see docker/package/Makefile).
+# Build context is the repository root (see docker/deploy/Makefile).
 #
 # Keep .git: setuptools-scm needs it to determine the package version.
 # Only exclude files that git does not track. Excluding tracked files makes
@@ -31,4 +31,4 @@ venv/
 .ruff_cache/
 
 # Makefile stamp files
-docker/package/npg_porch.*
+docker/deploy/npg_porch.*
