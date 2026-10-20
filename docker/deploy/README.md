@@ -35,7 +35,7 @@ build with `docker` directly. To build without the Makefile, run the following f
 the root of the repository:
 
 ```bash
-docker build --rm -f docker/package/Dockerfile -t npg_porch .
+docker build --rm -f docker/deploy/Dockerfile -t npg_porch .
 ```
 
 ### Makefile variables
@@ -122,7 +122,7 @@ docker run --rm -p 8081:8081 \
   -e DB_URL='postgresql+asyncpg://porch_user:password@db.example.com:5432/porch_db' \
   -v /path/to/certs:/certs:ro \
   npg_porch \
-  /app/docker/package/scripts/entrypoint.sh \
+  /app/docker/deploy/scripts/entrypoint.sh \
     --ssl-keyfile /certs/tls.key \
     --ssl-certfile /certs/tls.crt
 ```
